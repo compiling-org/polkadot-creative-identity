@@ -1,53 +1,77 @@
-# Dependencies
+# Dependencies and build artifacts
 node_modules/
-target/
 dist/
-build/
-*.log
+target/
+Cargo.lock
+package-lock.json
+yarn.lock
 
-# IDE
+# IDE and editor files
 .vscode/
 .idea/
 *.swp
 *.swo
+*~
 
-# OS
+# OS generated files
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
 
-# Temporary files
+# Logs and temporary files
+*.log
+*.pid
 *.tmp
 *.temp
-.cache/
+nul
 
-# Large files that shouldn't be in git
-*.mp4
-*.mov
-*.avi
-*.mkv
+# Blockchain and crypto files (private keys, etc)
+*.json
+!package.json
+!tsconfig.json
+!Cargo.toml
+*.key
+*.pem
+*.seed
+
+# Large binary files
+*.wasm
 *.zip
 *.tar.gz
-*.rar
-*.pdb
+*.exe
+*.dll
+*.so
+*.dylib
 
-# Build artifacts
-pkg/
-wasm-pack.log
+# Polkadot
+.polkadot/
+polkadot/
 
-# Rust
-Cargo.lock
-/target/
+# Rust build artifacts
+**/target/
 **/*.rs.bk
+**/debug/
+**/release/
 
-# JavaScript
-package-lock.json
-yarn.lock
-.npm/
-.yarn/
+# Test coverage
+coverage/
+*.lcov
 
-# Logs
-logs/
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
+# Cache directories
+.cache/
+.parcel-cache/
+.next/
+.nuxt/
+.vuepress/dist/
+.serverless/
+.fusebox/
+.dynamodb/
+.tern-port
+
+# Temporary files
+tmp/
+temp/
