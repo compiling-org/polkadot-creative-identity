@@ -103,4 +103,25 @@ This is actually one of our strongest implementations. The code is production-re
 
 The emotional bridge concept is genuinely innovative - preserving emotional metadata across different blockchain networks is something no one else is doing. The analytics engine provides real utility for creators to understand how their NFTs emotionally resonate with audiences.
 
-**Reality Check**: 75% complete, 0% deployed, but 100% ready for deployment once tooling is resolved.
+**Reality Check**: 75% complete, 0% deployed, but 100% ready for deployment once tooling is resolved.### Architecture Diagram
+
+```mermaid
+graph LR
+    CLIENT[PolkadotClient] --> RPC[Subxt RPC]
+    CLIENT --> ID[Identity/Soulbound]
+    CLIENT --> BRIDGE[Cross-Chain Bridge]
+```
+
+### Component Flow
+
+```mermaid
+graph TB
+    subgraph Analytics
+        PRE[Preprocess]
+        TREND[Trend Analysis]
+        PRED[Prediction]
+    end
+    INPUT[Emotional Data] --> PRE
+    PRE --> TREND
+    TREND --> PRED
+```
