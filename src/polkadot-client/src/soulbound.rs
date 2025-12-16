@@ -405,3 +405,36 @@ impl SoulboundTokenClient {
             (token.adaptive_personality.emotional_stability + (1.0 - interaction_emotional_impact.abs()) * learning_rate).clamp(0.0, 1.0);
     }
 }
+
+#[cfg(all(test, not(target_os = "windows")))]
+mod tests {
+    use super::*;
+    use subxt::utils::AccountId32;
+
+    #[test]
+    fn reputation_update_bounds() {
+        let mut rep = ReputationData::default();
+        assert!(SoulboundTokenClient::update_reputation(&mut rep, 50).is_ok());
+        assert_eq!(rep.score, 50);
+        assert!(SoulboundTokenClient::update_reputation(&mut rep, -10).is_ok());
+        assert_eq!(rep.score, 40);
+    }
+
+    #[test]
+    fn emotional_metrics_calculation_basic() {
+        let mut data = Vec::new();
+        data.push(EmotionalMetadata::new(0.2, 0.3, 0.4));
+        data.push(EmotionalMetadata::new(0.3, 0.4, 0.5));
+        let metrics = SoulboundTokenClient::calculate_emotional_metrics(&data);
+        assert!(metrics.avg_valence >= 0.0 && metrics.avg_valence <= 1.0);
+        assert!(metrics.avg_arousal >= 0.0 && metrics.avg_arousal <= 1.0);
+    }
+
+    #[test]
+    fn create_soulbound_token() {
+        let owner = AccountId32::from([1u8; 32]);
+        let token = SoulboundTokenClient::new_soulbound_token(owner.clone(), 1, TokenType::CreatorIdentity, vec![1,2,3]);
+        assert_eq!(token.owner, owner);
+        assert_eq!(token.token_id, 1);
+    }
+}

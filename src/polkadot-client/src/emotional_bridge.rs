@@ -150,3 +150,28 @@ impl EmotionalBridgeProcessor {
         total_variance.clamp(0.0, 1.0)
     }
 }
+
+#[cfg(all(test, not(target_os = "windows")))]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn emotional_trend_analysis_works() {
+        let mut history = Vec::new();
+        history.push(EmotionalMetadata::new(0.2, 0.2, 0.5));
+        history.push(EmotionalMetadata::new(0.3, 0.3, 0.5));
+        history.push(EmotionalMetadata::new(0.5, 0.4, 0.5));
+        let trend = EmotionalBridgeProcessor::analyze_emotional_trend(&history);
+        assert!(matches!(trend, EmotionalTrend::Ascending | EmotionalTrend::Stable | EmotionalTrend::Volatile));
+    }
+
+    #[test]
+    fn predict_next_emotion_requires_history() {
+        let mut history = Vec::new();
+        history.push(EmotionalMetadata::new(0.1, 0.2, 0.3));
+        history.push(EmotionalMetadata::new(0.2, 0.3, 0.4));
+        assert!(EmotionalBridgeProcessor::predict_next_emotion(&history).is_none());
+        history.push(EmotionalMetadata::new(0.3, 0.4, 0.5));
+        assert!(EmotionalBridgeProcessor::predict_next_emotion(&history).is_some());
+    }
+}

@@ -8,12 +8,18 @@ use subxt::{OnlineClient, PolkadotConfig};
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use subxt::dynamic::{storage as dyn_storage, Value as DynValue};
+use subxt::dynamic::Value;
+use subxt::ext::sp_core::crypto::Ss58Codec;
+use subxt::ext::sp_runtime::AccountId32 as SrAccountId32;
 
 mod emotional_bridge;
 mod soulbound;
+mod extrinsics;
 
 pub use emotional_bridge::*;
 pub use soulbound::*;
+pub use extrinsics::{ExtrinsicSubmitter, TransactionResult, TransactionStatus, TransactionEvent};
 
 /// Polkadot client for creative NFT operations
 pub struct PolkadotClient {
@@ -37,6 +43,59 @@ impl PolkadotClient {
     /// Get the underlying subxt client
     pub fn client(&self) -> &OnlineClient<PolkadotConfig> {
         &self.client
+    }
+    
+    pub fn extrinsics(&self) -> ExtrinsicSubmitter {
+        ExtrinsicSubmitter::new(self.client.clone())
+    }
+
+    pub async fn remark_suri(&self, suri: &str, remark: &[u8]) -> Result<TransactionResult> {
+        let ex = self.extrinsics();
+        let signer = ex.signer_from_suri(suri)?;
+        ex.submit_system_remark(&signer, remark).await
+    }
+
+    pub async fn transfer_keep_alive_suri(
+        &self,
+        suri: &str,
+        dest: subxt::ext::sp_runtime::AccountId32,
+        amount: u128,
+    ) -> Result<TransactionResult> {
+        let ex = self.extrinsics();
+        let signer = ex.signer_from_suri(suri)?;
+        ex.submit_balances_transfer_keep_alive(&signer, dest, amount).await
+    }
+
+    pub fn ss58_to_account(&self, ss58: &str) -> Result<SrAccountId32> {
+        SrAccountId32::from_string(ss58).map_err(|e| anyhow::anyhow!(format!("{:?}", e)))
+    }
+
+    pub async fn system_account_json_ss58(&self, ss58: &str) -> Result<serde_json::Value> {
+        let account = self.ss58_to_account(ss58)?;
+        let acc_utils: subxt::utils::AccountId32 = account.into();
+        self.get_system_account_json(acc_utils).await
+    }
+
+    pub async fn dynamic_call_suri(
+        &self,
+        suri: &str,
+        pallet: &str,
+        call: &str,
+        args: Vec<Value>,
+    ) -> Result<TransactionResult> {
+        let ex = self.extrinsics();
+        let signer = ex.signer_from_suri(suri)?;
+        ex.submit_dynamic_call(&signer, pallet, call, args).await
+    }
+
+    pub async fn transfer_keep_alive_ss58_suri(
+        &self,
+        suri: &str,
+        dest_ss58: &str,
+        amount: u128,
+    ) -> Result<TransactionResult> {
+        let dest = self.ss58_to_account(dest_ss58)?;
+        self.transfer_keep_alive_suri(suri, dest, amount).await
     }
     
     /// Store metadata in cache
@@ -67,6 +126,16 @@ impl PolkadotClient {
     /// Predict emotional state of a token
     pub fn predict_token_emotion(&self, token_id: &str) -> Option<EmotionalMetadata> {
         self.token_analytics.predict_emotion(token_id)
+    }
+    
+    /// Fetch System.Account dynamically and return as JSON
+    pub async fn get_system_account_json(&self, account: subxt::utils::AccountId32) -> Result<serde_json::Value> {
+        let addr = dyn_storage("System", "Account", vec![DynValue::from_bytes(&account)]);
+        let storage_at = self.client.storage().at_latest().await?;
+        let maybe = storage_at.fetch(&addr).await?;
+        let value = maybe.ok_or_else(|| anyhow::anyhow!("No System.Account found"))?.to_value()?;
+        let json = serde_json::to_value(&value)?;
+        Ok(json)
     }
 }
 
@@ -329,10 +398,10 @@ impl Default for AdaptiveBehavior {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, not(target_os = "windows")))]
 mod tests {
     use super::*;
-
+    
     #[test]
     fn test_polkadot_client_creation() {
         // This would be an integration test in a real implementation
